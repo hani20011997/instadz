@@ -9,10 +9,10 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@master
+      uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@master
+      uses: actions/setup-python@v4
       with:
         python-version: '3.9'
 
@@ -26,9 +26,9 @@ jobs:
     - name: Install Android SDK & Build Tools
       run: |
         mkdir -p $HOME/android-sdk/cmdline-tools
-        cd $HOME/android-sdk/cmdline-tools
         wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
-        unzip cmdline-tools.zip -d latest
+        unzip cmdline-tools.zip -d $HOME/android-sdk/cmdline-tools
+        mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
         yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk --licenses
         yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk "platform-tools" "platforms;android-30" "build-tools;30.0.3"
 
