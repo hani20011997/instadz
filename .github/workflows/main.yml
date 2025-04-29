@@ -34,9 +34,5 @@ jobs:
         run: |
           buildozer init || true
           buildozer android debug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@2.2.4
-        with:
-          name: app-release
-          path: bin/*.apk
+          mkdir -p output_apk
+          cp bin/*.apk output_apk/
