@@ -30,17 +30,11 @@ jobs:
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
         unzip cmdline-tools.zip
         mv cmdline-tools latest
-
-        # Accept licenses
         yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=${HOME}/android-sdk --licenses
+        yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=${HOME}/android-sdk "platform-tools" "platforms;android-30" "build-tools;36.0.0"
 
-        # Install tools separately to avoid broken pipe
-        $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=${HOME}/android-sdk "platform-tools" "platforms;android-30"
-        sleep 5
-        $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=${HOME}/android-sdk "build-tools;36.0.0"
-
-        # Fix aidl missing issue
-        mkdir -p $HOME/android-sdk/build-tools/36.0.0
+    - name: Fix missing aidl
+      run: |
         echo -e '#!/bin/bash\nexit 0' > $HOME/android-sdk/build-tools/36.0.0/aidl
         chmod +x $HOME/android-sdk/build-tools/36.0.0/aidl
 
