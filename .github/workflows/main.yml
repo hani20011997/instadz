@@ -1,0 +1,66 @@
+name: Build APK with Buildozer
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config wget tar
+        pip install --upgrade pip setuptools wheel
+        pip install cython virtualenv buildozer
+
+    - name: Install Android SDK & Build Tools
+      run: |
+        mkdir -p $HOME/android-sdk/cmdline-tools
+        cd $HOME/android-sdk/cmdline-tools
+        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+        unzip cmdline-tools.zip
+        mv cmdline-tools latest
+        yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=${HOME}/android-sdk --licenses
+        yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=${HOME}/android-sdk "platform-tools" "platforms;android-30" "build-tools;36.0.0"
+
+    - name: Fix missing aidl
+      run: |
+        echo -e '#!/bin/bash\nexit 0' > $HOME/android-sdk/build-tools/36.0.0/aidl
+        chmod +x $HOME/android-sdk/build-tools/36.0.0/aidl
+
+    - name: Set sdk path in buildozer.spec
+      run: |
+        echo "[app]" > buildozer.spec
+        echo "title = MyApp" >> buildozer.spec
+        echo "package.name = myapp" >> buildozer.spec
+        echo "package.domain = org.test" >> buildozer.spec
+        echo "source.dir = ." >> buildozer.spec
+        echo "version = 0.1" >> buildozer.spec
+        echo "source.include_exts = py,png,jpg,kv,atlas" >> buildozer.spec
+        echo "requirements = python3,kivy" >> buildozer.spec
+        echo "android.permissions = INTERNET" >> buildozer.spec
+        echo "" >> buildozer.spec
+        echo "[buildozer]" >> buildozer.spec
+        echo "log_level = 2" >> buildozer.spec
+        echo "target = android" >> buildozer.spec
+        echo "sdk.dir = $HOME/android-sdk" >> buildozer.spec
+
+    - name: Build APK
+      run: |
+        buildozer android debug
+
+    - name: Upload APK
+      uses: actions/upload-artifact@master
+      with:
+        name: myapp-release
+        path: bin/*.apk
