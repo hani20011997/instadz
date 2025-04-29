@@ -7,6 +7,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      ANDROID_SDK_ROOT: $HOME/android-sdk
+      ANDROID_HOME:     $HOME/android-sdk
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
@@ -14,46 +18,49 @@ jobs:
     - name: Set up Python & Buildozer
       run: |
         sudo apt update
-        sudo apt install -y zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config wget tar
+        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config wget tar
         pip install --upgrade pip setuptools wheel
-        pip install --user Cython virtualenv buildozer
+        pip install --user cython virtualenv buildozer
         export PATH=$HOME/.local/bin:$PATH
 
     - name: Install Android command-line tools
       run: |
-        mkdir -p $HOME/android-sdk/cmdline-tools
-        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip \
-          -O cmdline-tools.zip
-        unzip cmdline-tools.zip -d $HOME/android-sdk/cmdline-tools
-        mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
-        yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk --licenses
+        mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
+        cd $ANDROID_SDK_ROOT/cmdline-tools
+        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+        unzip cmdline-tools.zip
+        mv cmdline-tools latest
+        yes | latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses
 
-    - name: Install platform & build-tools 30.0.3
+    - name: Install platform-tools, build-tools & NDK
       run: |
-        $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk \
-          "platform-tools" "platforms;android-30" "build-tools;30.0.3"
-        echo "Installed build-tools:" 
-        ls -1 $HOME/android-sdk/build-tools/30.0.3
+        latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-30" "build-tools;30.0.3"
+        # هنا نثبت NDK إصدار مدعوم
+        latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "ndk;21.4.7075529"
 
     - name: Configure buildozer.spec
       run: |
         cat > buildozer.spec << 'EOF'
         [app]
-        title = MyApp
-        package.name = myapp
-        package.domain = org.test
+        title = InstaDZ
+        package.name = instadz
+        package.domain = org.instadz
         source.dir = .
         source.include_exts = py,png,jpg,kv,atlas
-        version = 0.1
+        version = 1.0
         requirements = python3,kivy
         orientation = portrait
         fullscreen = 1
+        android.permissions = INTERNET
+        android.api = 30
+        android.minapi = 21
+        android.build_tools_version = 30.0.3
+        android.ndk = 21.4.7075529
 
         [buildozer]
         log_level = 2
         warn_on_root = 0
-        android.sdk_path = $HOME/android-sdk
-        android.build_tools_version = 30.0.3
+        android.sdk_path = $ANDROID_SDK_ROOT
         EOF
 
     - name: Build APK
@@ -63,5 +70,5 @@ jobs:
     - name: Upload APK
       uses: actions/upload-artifact@master
       with:
-        name: myapp-release
+        name: instadz-debug
         path: bin/*.apk
