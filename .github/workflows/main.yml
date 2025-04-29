@@ -30,11 +30,18 @@ jobs:
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
         unzip cmdline-tools.zip
         mv cmdline-tools latest
-        yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=${HOME}/android-sdk \
-          "platform-tools" "platforms;android-30" "build-tools;36.0.0"
-        # Fix aid1 missing issue
+
+        # Accept licenses
+        yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=${HOME}/android-sdk --licenses
+
+        # Install tools separately to avoid broken pipe
+        $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=${HOME}/android-sdk "platform-tools" "platforms;android-30"
+        sleep 5
+        $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=${HOME}/android-sdk "build-tools;36.0.0"
+
+        # Fix aidl missing issue
         mkdir -p $HOME/android-sdk/build-tools/36.0.0
-        echo -e '#!/bin/bash\nexit 0' > $HOME/android-sdk/build-tools/36.0.0/aid1
+        echo -e '#!/bin/bash\nexit 0' > $HOME/android-sdk/build-tools/36.0.0/aidl
         chmod +x $HOME/android-sdk/build-tools/36.0.0/aidl
 
     - name: Set sdk path in buildozer.spec
