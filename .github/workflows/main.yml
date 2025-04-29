@@ -19,9 +19,14 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config
+          sudo apt install -y zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config curl
           pip install --upgrade pip setuptools wheel
           pip install cython virtualenv buildozer
+
+      - name: Accept SDK Licenses and Install Build Tools
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "build-tools;34.0.0" "platforms;android-34" || true
 
       - name: Build APK
         run: |
@@ -29,7 +34,7 @@ jobs:
           buildozer android debug
 
       - name: Upload APK
-        uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@v3
         with:
           name: app-release
           path: bin/*.apk
