@@ -1,51 +1,48 @@
-name: build
+name: Build Kivy APK
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
 
-      - name: Install system dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y \
-            zip unzip git python3-pip \
-            libgl1-mesa-dev libgles2-mesa-dev \
-            build-essential autoconf \
-            libtool pkg-config \
-            zlib1g-dev libncurses5-dev libffi-dev \
-            libsqlite3-dev libssl-dev \
-            libjpeg-dev libfreetype6-dev \
-            liblcms2-dev libwebp-dev libharfbuzz-dev \
-            libfribidi-dev libxcb1-dev \
-            openjdk-17-jdk
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libtool \
+          automake \
+          build-essential \
+          git \
+          zip \
+          unzip \
+          openjdk-17-jdk \
+          python3-pip \
+          python3-setuptools \
+          python3-wheel \
+          libffi-dev \
+          libssl-dev \
+          autoconf \
+          pkg-config
 
-      - name: Install Python dependencies
-        run: |
-          pip install --upgrade pip
-          pip install cython virtualenv
+    - name: Install pip dependencies
+      run: |
+        pip install --upgrade pip
+        pip install buildozer cython
 
-      - name: Install Buildozer
-        run: |
-          pip install buildozer
-
-      - name: Initialize Buildozer
-        run: |
-          buildozer init || true
-
-      - name: Build APK
-        run: |
-          buildozer -v android debug
+    - name: Build APK with Buildozer
+      run: |
+        buildozer android debug
