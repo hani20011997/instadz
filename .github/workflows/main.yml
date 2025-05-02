@@ -3,41 +3,49 @@ name: Build APK
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch:
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      JAVA_OPTS: "-Xmx2048m"
-
+    permissions:  # أضف هذه الصلاحيات
+      contents: write
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up Python
+    - name: Set up Python 3.10
       uses: actions/setup-python@v4
       with:
         python-version: "3.10"
 
-    - name: Install dependencies
+    - name: Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y \
             python3-pip \
+            build-essential \
+            libffi-dev \
+            libssl-dev \
+            python3-dev \
+            openjdk-17-jdk \
             zlib1g-dev \
-            openjdk-17-jdk
+            ccache
 
     - name: Install Buildozer
-      run: pip install buildozer
+      run: |
+        pip install --upgrade pip
+        pip install buildozer
+        buildozer init
 
     - name: Build APK
       run: |
-        buildozer init
         buildozer -v android debug
+        ls -l bin/
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v3
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4  # غيّر الإصدار إلى v4
       with:
         name: app-debug
         path: bin/*.apk
