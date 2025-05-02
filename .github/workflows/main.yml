@@ -1,40 +1,62 @@
-name: Build APK
+name: Android Build
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
-  build:
+  build-apk:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+
     steps:
-    - name: Checkout code
+    - name: Checkout source
       uses: actions/checkout@v4
 
-    - name: Set up Python
+    - name: Set up Python 3.10
       uses: actions/setup-python@v4
       with:
         python-version: "3.10"
 
-    - name: Install dependencies
+    - name: Install system dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install -y \
+        sudo apt-get update -y
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
             python3-pip \
-            zlib1g-dev \
-            openjdk-17-jdk \
+            build-essential \
             libffi-dev \
-            libssl-dev
+            libssl-dev \
+            python3-dev \
+            openjdk-11-jdk \
+            zlib1g-dev \
+            ccache \
+            pkg-config \
+            git
 
     - name: Install Buildozer
-      run: pip install buildozer
-
-    - name: Build APK (Skip init)
       run: |
-        buildozer -v android debug  # لا تستخدم buildozer init
+        pip install --user --upgrade pip
+        pip install --user buildozer
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Cache build directories
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.buildozer
+          ~/.gradle
+          ~/.android
+        key: ${{ runner.os }}-build-${{ hashFiles('buildozer.spec') }}
+
+    - name: Build APK
+      run: |
+        buildozer -v android clean
+        buildozer -v android debug
+        while sleep 60; do echo ">>> build in progress..."; done &
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: app-debug
+        name: MyApp-APK
         path: bin/*.apk
