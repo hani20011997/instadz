@@ -19,9 +19,6 @@ jobs:
         sudo sed -i \
           's|http://archive.ubuntu.com|http://mirror.kakao.com|g' \
           /etc/apt/sources.list
-        sudo sed -i \
-          's|http://security.ubuntu.com|http://mirror.kakao.com|g' \
-          /etc/apt/sources.list
 
     - name: Set up Python 3.10
       uses: actions/setup-python@v4
@@ -33,46 +30,38 @@ jobs:
         sudo apt-get update -y
         sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
             software-properties-common \
-            apt-transport-https \
             ca-certificates \
-            gnupg \
             curl \
-            git-lfs
+            gnupg
 
-    - name: Add Android repository (Modern Method)
+    - name: Add Android repository (Official Google)
       run: |
-        # إنشاء مجلد المفاتيح
+        # Add Google's official Android repository
         sudo mkdir -p /usr/share/keyrings
+        curl -fsSL "https://dl-ssl.google.com/android/repository/repository2-1.xml" | \
+        grep "key" | \
+        sed -E 's/.*<key>([^<]+).*/\1/' | \
+        xargs -I {} curl -fsSL "https://dl-ssl.google.com/android/repository/{}" | \
+        sudo gpg --dearmor -o /usr/share/keyrings/android-google.gpg
         
-        # تنزيل المفتاح باستخدام Tencent Mirror
-        curl -fsSL "https://mirrors.cloud.tencent.com/android/repository/keys/0xAED0B706B34BBF99.asc" \
-        | sudo gpg --dearmor -o /usr/share/keyrings/android-archive-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/android-google.gpg] https://dl.google.com/android/repository/ stable main" | \
+        sudo tee /etc/apt/sources.list.d/android-google.list
         
-        # إضافة المستودع الآمن
-        echo "deb [signed-by=/usr/share/keyrings/android-archive-keyring.gpg arch=amd64] https://mirrors.cloud.tencent.com/android/repository/ stable main" \
-        | sudo tee /etc/apt/sources.list.d/android-tencent.list
-        
-        # تحديث القوائم
         sudo apt-get update -y
 
     - name: Install core dependencies
       run: |
         sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-            python3-pip \
-            build-essential \
-            openjdk-11-jdk \
-            zlib1g-dev \
-            libffi-dev \
-            libssl-dev \
             android-sdk \
-            android-ndk-r25b
+            android-ndk-r25b \
+            openjdk-11-jdk \
+            python3-pip \
+            build-essential
 
-    - name: Configure Android environment
+    - name: Configure Android SDK
       run: |
-        mkdir -p ~/.android
-        echo "count=0" | sudo tee ~/.android/repositories.cfg
         yes | sudo sdkmanager --licenses
-        sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+        sdkmanager "platform-tools" "platforms;android-34"
 
     - name: Setup Buildozer
       run: |
@@ -82,24 +71,14 @@ jobs:
     - name: Prepare build environment
       run: |
         rm -rf .buildozer || true
-        mkdir -p .buildozer/android/platform
-        git clone --depth 1 --branch 2023.08.25 \
-          https://ghproxy.com/https://github.com/kivy/python-for-android \
-          .buildozer/android/platform/python-for-android
+        buildozer android init  # Let Buildozer handle setup
 
-    - name: Build APK (Stable Mode)
+    - name: Build APK
       run: |
-        buildozer -v android clean
-        buildozer -v android debug \
-          -- \
-          --offline \
-          --copy-libs \
-          --disable-check-external
+        buildozer -v android debug
 
-    - name: Upload artifacts
+    - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: APK-Package
-        path: |
-          bin/*.apk
-          build.log
+        name: App-Release
+        path: bin/*.apk
