@@ -34,17 +34,13 @@ jobs:
             curl \
             gnupg
 
-    - name: Add Android repository (Official Google)
+    - name: Add Android repository (Alternative Key)
       run: |
-        # Add Google's official Android repository
-        sudo mkdir -p /usr/share/keyrings
-        curl -fsSL "https://dl-ssl.google.com/android/repository/repository2-1.xml" | \
-        grep "key" | \
-        sed -E 's/.*<key>([^<]+).*/\1/' | \
-        xargs -I {} curl -fsSL "https://dl-ssl.google.com/android/repository/{}" | \
-        sudo gpg --dearmor -o /usr/share/keyrings/android-google.gpg
+        # تنزيل المفتاح البديل من مرآة موثوقة
+        curl -fsSL https://dl.google.com/android/repository/archive-key.asc | sudo gpg --dearmor -o /usr/share/keyrings/android-archive.gpg
         
-        echo "deb [signed-by=/usr/share/keyrings/android-google.gpg] https://dl.google.com/android/repository/ stable main" | \
+        # إضافة المستودع
+        echo "deb [signed-by=/usr/share/keyrings/android-archive.gpg arch=amd64] https://dl.google.com/android/repository/ stable main" | \
         sudo tee /etc/apt/sources.list.d/android-google.list
         
         sudo apt-get update -y
@@ -53,15 +49,15 @@ jobs:
       run: |
         sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
             android-sdk \
-            android-ndk-r25b \
-            openjdk-11-jdk \
+            android-ndk-r25c \  # تغيير الإصدار إلى 25c
+            openjdk-17-jdk \  # استخدام جافا 17
             python3-pip \
             build-essential
 
     - name: Configure Android SDK
       run: |
         yes | sudo sdkmanager --licenses
-        sdkmanager "platform-tools" "platforms;android-34"
+        sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
     - name: Setup Buildozer
       run: |
@@ -70,8 +66,8 @@ jobs:
 
     - name: Prepare build environment
       run: |
-        rm -rf .buildozer || true
         buildozer android init  # Let Buildozer handle setup
+        mkdir -p .buildozer/android/platform
 
     - name: Build APK
       run: |
