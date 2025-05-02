@@ -3,6 +3,7 @@ name: Build APK
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -31,21 +32,59 @@ jobs:
             git \
             unzip \
             curl \
-            cython3  # إضافة Cython من apt
+            cython3
 
     - name: Install Python dependencies
       run: |
-        pip install --user --upgrade pip
+        pip install --user --upgrade pip wheel
         pip install --user buildozer==1.5.0
-        pip install --user cython  # تثبيت Cython عبر pip
+        pip install --user cython==3.0.8
         echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.buildozer
+          ~/.gradle/caches
+        key: ${{ runner.os }}-build-${{ hashFiles('buildozer.spec') }}
 
     - name: Prepare Python-for-Android
       run: |
         rm -rf .buildozer || true
         mkdir -p .buildozer/android/platform
-        git clone https://github.com/kivy/python-for-android.git .buildozer/android/platform/python-for-android
+        git clone --depth 1 --branch 2023.08.25 \
+          https://github.com/kivy/python-for-android.git \
+          .buildozer/android/platform/python-for-android
 
-    - name: Build APK
+    - name: Fix permissions
       run: |
-        buildozer -v android debug
+        chmod -R 755 .buildozer
+        sudo chown -R $USER:$USER .buildozer
+
+    - name: Build APK with debug logs
+      run: |
+        buildozer android clean
+        buildozer -v android debug 2>&1 | tee build.log
+        
+        # تحليل السجلات تلقائيًا
+        if grep -iE 'error|critical|fail' build.log; then
+          echo "❌ Build failed! Check highlighted errors above"
+          exit 1
+        else
+          echo "✅ Build succeeded!"
+        fi
+
+    - name: Upload APK
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: App-Release
+        path: bin/*.apk
+
+    - name: Upload logs
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: Build-Logs
+        path: build.log
