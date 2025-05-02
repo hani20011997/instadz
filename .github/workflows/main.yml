@@ -16,9 +16,7 @@ jobs:
 
     - name: Configure Ubuntu mirrors
       run: |
-        sudo sed -i \
-          's|http://archive.ubuntu.com|http://mirror.kakao.com|g' \
-          /etc/apt/sources.list
+        sudo sed -i 's|http://archive.ubuntu.com|http://mirror.kakao.com|g' /etc/apt/sources.list
 
     - name: Set up Python 3.10
       uses: actions/setup-python@v4
@@ -29,44 +27,32 @@ jobs:
       run: |
         sudo apt-get update -y
         sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-            software-properties-common \
-            ca-certificates \
-            curl \
-            gnupg
+          software-properties-common \
+          ca-certificates \
+          curl \
+          gnupg
 
-    - name: Add Android repository (Alternative Key)
+    - name: Add Android repository
       run: |
-        # تنزيل المفتاح البديل من مرآة موثوقة
         curl -fsSL https://dl.google.com/android/repository/archive-key.asc | sudo gpg --dearmor -o /usr/share/keyrings/android-archive.gpg
-        
-        # إضافة المستودع
-        echo "deb [signed-by=/usr/share/keyrings/android-archive.gpg arch=amd64] https://dl.google.com/android/repository/ stable main" | \
-        sudo tee /etc/apt/sources.list.d/android-google.list
-        
+        echo "deb [signed-by=/usr/share/keyrings/android-archive.gpg arch=amd64] https://dl.google.com/android/repository/ stable main" | sudo tee /etc/apt/sources.list.d/android-google.list
         sudo apt-get update -y
 
     - name: Install core dependencies
       run: |
         sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-            android-sdk \
-            android-ndk-r25c \  # تغيير الإصدار إلى 25c
-            openjdk-17-jdk \  # استخدام جافا 17
-            python3-pip \
-            build-essential
+          openjdk-17-jdk \
+          python3-pip \
+          build-essential
 
-    - name: Configure Android SDK
-      run: |
-        yes | sudo sdkmanager --licenses
-        sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-
-    - name: Setup Buildozer
+    - name: Install Buildozer
       run: |
         pip install --user buildozer==1.5.0
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
     - name: Prepare build environment
       run: |
-        buildozer android init  # Let Buildozer handle setup
+        buildozer android init || true
         mkdir -p .buildozer/android/platform
 
     - name: Build APK
