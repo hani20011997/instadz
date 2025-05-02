@@ -30,11 +30,14 @@ jobs:
             libssl-dev \
             git \
             unzip \
-            curl
+            curl \
+            cython3  # إضافة Cython من apt
 
-    - name: Install Buildozer
+    - name: Install Python dependencies
       run: |
+        pip install --user --upgrade pip
         pip install --user buildozer==1.5.0
+        pip install --user cython  # تثبيت Cython عبر pip
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
     - name: Prepare Python-for-Android
@@ -42,8 +45,6 @@ jobs:
         rm -rf .buildozer || true
         mkdir -p .buildozer/android/platform
         git clone https://github.com/kivy/python-for-android.git .buildozer/android/platform/python-for-android
-        cd .buildozer/android/platform/python-for-android
-        git checkout master  # أو إصدار محدد مثل 2023.8.25
 
     - name: Build APK
       run: |
