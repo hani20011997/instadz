@@ -32,12 +32,6 @@ jobs:
           curl \
           gnupg
 
-    - name: Add Android repository
-      run: |
-        curl -fsSL https://dl.google.com/android/repository/archive-key.asc | sudo gpg --dearmor -o /usr/share/keyrings/android-archive.gpg
-        echo "deb [signed-by=/usr/share/keyrings/android-archive.gpg arch=amd64] https://dl.google.com/android/repository/ stable main" | sudo tee /etc/apt/sources.list.d/android-google.list
-        sudo apt-get update -y
-
     - name: Install core dependencies
       run: |
         sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
