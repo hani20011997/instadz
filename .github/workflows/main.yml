@@ -7,13 +7,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Python
+    - name: Set up Python 3.10
       uses: actions/setup-python@v4
       with:
         python-version: "3.10"
@@ -29,18 +29,24 @@ jobs:
             libffi-dev \
             libssl-dev \
             git \
-            unzip
+            unzip \
+            curl
 
     - name: Install Buildozer
       run: |
-        pip install --user buildozer
+        pip install --user buildozer==1.5.0
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-    - name: Force recreate directories
+    - name: Initialize Buildozer environment
       run: |
         buildozer android clean
-        rm -rf .buildozer  # حذف المجلد القديم
-        buildozer android init  # إعادة تهيئة المشروع
+        rm -rf .buildozer || true
+        buildozer android init
+
+    - name: Manually setup python-for-android
+      run: |
+        mkdir -p .buildozer/android/platform
+        git clone https://github.com/kivy/python-for-android.git .buildozer/android/platform/python-for-android
 
     - name: Build APK
       run: |
