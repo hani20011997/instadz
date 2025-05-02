@@ -8,18 +8,44 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Configure Ubuntu mirrors
+      run: |
+        sudo sed -i \
+          's|http://archive.ubuntu.com|http://mirror.kakao.com|g' \
+          /etc/apt/sources.list
+        sudo sed -i \
+          's|http://security.ubuntu.com|http://mirror.kakao.com|g' \
+          /etc/apt/sources.list
 
     - name: Set up Python 3.10
       uses: actions/setup-python@v4
       with:
         python-version: "3.10"
 
-    - name: Install system dependencies
+    - name: Install system tools
+      run: |
+        sudo apt-get update -y
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            software-properties-common \
+            apt-transport-https \
+            ca-certificates \
+            gnupg-agent
+
+    - name: Add Android repository
+      run: |
+        sudo apt-key adv \
+          --keyserver keyserver.ubuntu.com \
+          --recv-keys 0xAED0B706B34BBF99
+        sudo add-apt-repository -y \
+          "deb [arch=amd64] https://mirrors.tuna.tsinghua.edu.cn/android/repository/ stable main"
+
+    - name: Install core dependencies
       run: |
         sudo apt-get update -y
         sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -29,62 +55,47 @@ jobs:
             zlib1g-dev \
             libffi-dev \
             libssl-dev \
-            git \
+            git-lfs \
             unzip \
             curl \
-            cython3
+            cython3 \
+            android-sdk \
+            android-ndk-r25b
 
-    - name: Install Python dependencies
+    - name: Configure Android environment
       run: |
-        pip install --user --upgrade pip wheel
+        mkdir -p ~/.android
+        echo "### User Sources" > ~/.android/repositories.cfg
+        echo "count=0" >> ~/.android/repositories.cfg
+        yes | sudo sdkmanager --licenses
+        sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+    - name: Setup Buildozer
+      run: |
         pip install --user buildozer==1.5.0
-        pip install --user cython==3.0.8
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-    - name: Cache dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.buildozer
-          ~/.gradle/caches
-        key: ${{ runner.os }}-build-${{ hashFiles('buildozer.spec') }}
-
-    - name: Prepare Python-for-Android
+    - name: Prepare build environment
       run: |
         rm -rf .buildozer || true
         mkdir -p .buildozer/android/platform
         git clone --depth 1 --branch 2023.08.25 \
-          https://github.com/kivy/python-for-android.git \
+          https://mirror.ghproxy.com/https://github.com/kivy/python-for-android \
           .buildozer/android/platform/python-for-android
 
-    - name: Fix permissions
+    - name: Build APK (Offline Mode)
       run: |
-        chmod -R 755 .buildozer
-        sudo chown -R $USER:$USER .buildozer
+        buildozer -v android clean
+        buildozer -v android debug \
+          -- \
+          --offline \
+          --disable-check-external-repositories \
+          --copy-libs
 
-    - name: Build APK with debug logs
-      run: |
-        buildozer android clean
-        buildozer -v android debug 2>&1 | tee build.log
-        
-        # تحليل السجلات تلقائيًا
-        if grep -iE 'error|critical|fail' build.log; then
-          echo "❌ Build failed! Check highlighted errors above"
-          exit 1
-        else
-          echo "✅ Build succeeded!"
-        fi
-
-    - name: Upload APK
-      if: success()
+    - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: App-Release
-        path: bin/*.apk
-
-    - name: Upload logs
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: Build-Logs
-        path: build.log
+        name: APK-Package
+        path: |
+          bin/*.apk
+          build.log
