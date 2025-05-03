@@ -1,22 +1,21 @@
 [app]
-title = MyApp
-package.name = com.example.myapp
+title = InstaDZ
+package.name = instadz
 package.domain = org.example
 source.dir = .
+source.include_exts = py,png,jpg,kv,atlas
 version = 1.0
-requirements = 
-    python3,
-    kivy==2.2.1,
-    cython==3.0.0,
-    openssl
-
-android.accept_sdk_license = True
-android.ndk_path = /home/runner/android-sdk/ndk/25b
-android.sdk_path = /home/runner/android-sdk
-android.archs = arm64-v8a
-android.targetapi = 34
-android.minapi = 21
+requirements = python3,kivy==2.3.0
+orientation = portrait
+osx.kivy_version = 2.3.0
 
 [buildozer]
 log_level = 2
-p4a.branch = 2023.08.25
+warn_on_root = 1
+android.sdk_path = $HOME/android-sdk
+android.ndk_path = $HOME/android-sdk/ndk/25b
+p4a.branch = develop
+android.api = 34
+android.ndk = 25b
+android.build_tools_version = 34.0.0
+android.minapi = 21
