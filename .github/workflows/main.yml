@@ -35,37 +35,40 @@ jobs:
             cython3 \
             wget
 
-    - name: Install Android tools
+    - name: Setup Android SDK/NDK
       run: |
-        # إنشاء مجلد SDK مع صلاحيات المستخدم
+        # إنشاء مجلدات SDK و NDK
         mkdir -p $HOME/android-sdk
         cd $HOME/android-sdk
-        
+
         # تنزيل أدوات سطر الأوامر
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmd-tools.zip
         unzip cmd-tools.zip -d cmdline-tools
         mv cmdline-tools/cmdline-tools cmdline-tools/latest
-        
-        # إعداد مسارات SDK و PATH
+
+        # إعداد متغيرات البيئة
         echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
         echo "PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
-        
-        # قبول التراخيص وتثبيت المكونات
+
+        # قبول التراخيص وتثبيت المكونات الأساسية
         yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-        
-        # تنزيل NDK 25b يدويًا
+
+        # تنزيل NDK 25b
         wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
-        unzip android-ndk-r25b-linux.zip
-        mv android-ndk-r25b ndk/25b
+        unzip android-ndk-r25b-linux.zip -d ndk-temp
+        mkdir -p $HOME/android-sdk/ndk/25b
+        mv ndk-temp/android-ndk-r25b/* $HOME/android-sdk/ndk/25b
+        rm -rf ndk-temp android-ndk-r25b-linux.zip
 
     - name: Install Buildozer
       run: |
         pip install --user buildozer==1.5.0
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-    - name: Configure Buildozer
+    - name: Configure Build Environment
       run: |
-        mkdir -p ~/.buildozer
+        # تهيئة ملفات Buildozer
+        buildozer init
         echo "[buildozer]" > ~/.buildozer/default.cfg
         echo "android.ndk_path = $HOME/android-sdk/ndk/25b" >> ~/.buildozer/default.cfg
         echo "android.sdk_path = $HOME/android-sdk" >> ~/.buildozer/default.cfg
@@ -74,7 +77,7 @@ jobs:
       run: |
         buildozer android clean
         buildozer -v android debug 2>&1 | tee build.log
-        
+
         if [ -f bin/*.apk ]; then
           echo "✅ Build succeeded!"
         else
@@ -83,7 +86,7 @@ jobs:
           exit 1
         fi
 
-    - name: Upload artifacts
+    - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: Build-Output
