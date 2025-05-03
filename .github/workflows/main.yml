@@ -37,23 +37,18 @@ jobs:
 
     - name: Setup Android SDK/NDK
       run: |
-        # إنشاء مجلدات SDK و NDK
         mkdir -p $HOME/android-sdk
         cd $HOME/android-sdk
-
-        # تنزيل أدوات سطر الأوامر
+        
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmd-tools.zip
         unzip cmd-tools.zip -d cmdline-tools
         mv cmdline-tools/cmdline-tools cmdline-tools/latest
-
-        # إعداد متغيرات البيئة
+        
         echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
         echo "PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
-
-        # قبول التراخيص وتثبيت المكونات الأساسية
+        
         yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-
-        # تنزيل NDK 25b
+        
         wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
         unzip android-ndk-r25b-linux.zip -d ndk-temp
         mkdir -p $HOME/android-sdk/ndk/25b
@@ -67,11 +62,15 @@ jobs:
 
     - name: Configure Build Environment
       run: |
-        # تهيئة ملفات Buildozer
-        buildozer init
-        echo "[buildozer]" > ~/.buildozer/default.cfg
-        echo "android.ndk_path = $HOME/android-sdk/ndk/25b" >> ~/.buildozer/default.cfg
-        echo "android.sdk_path = $HOME/android-sdk" >> ~/.buildozer/default.cfg
+        # تجاوز تهيئة buildozer إذا الملف موجود
+        if [ ! -f buildozer.spec ]; then
+            buildozer init
+        fi
+        
+        # تحديث الإعدادات فقط
+        echo -e "\n[buildozer]" >> buildozer.spec
+        echo "android.ndk_path = $HOME/android-sdk/ndk/25b" >> buildozer.spec
+        echo "android.sdk_path = $HOME/android-sdk" >> buildozer.spec
 
     - name: Build APK
       run: |
