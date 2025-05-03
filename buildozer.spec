@@ -11,8 +11,11 @@ icon.filename = %(source.dir)s/data/icon.png
 presplash.filename = %(source.dir)s/data/splash.png
 
 android.accept_sdk_license = True
-android.ndk_path = /usr/lib/android-ndk-r25b
-android.sdk_path = /usr/lib/android-sdk
+
+android.ndk_path = /home/runner/android-sdk/ndk/25b
+android.sdk_path = /home/runner/android-sdk
+
+[buildozer]
 android.archs = arm64-v8a
 android.targetapi = 34
 android.minapi = 21
