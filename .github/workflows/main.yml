@@ -41,20 +41,19 @@ jobs:
         mkdir -p $HOME/android-sdk
         cd $HOME/android-sdk
         
-        # تنزيل وتثبيت أدوات سطر الأوامر
+        # تنزيل أدوات سطر الأوامر
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmd-tools.zip
         unzip cmd-tools.zip -d cmdline-tools
         mv cmdline-tools/cmdline-tools cmdline-tools/latest
         
-        # إعداد متغيرات البيئة
+        # إعداد مسارات SDK و PATH
         echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
         echo "PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
         
         # قبول التراخيص وتثبيت المكونات
-        yes | sdkmanager --licenses
-        sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+        yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-34" "build-tools;34.0.0"
         
-        # تنزيل NDK 25b مباشرةً
+        # تنزيل NDK 25b يدويًا
         wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
         unzip android-ndk-r25b-linux.zip
         mv android-ndk-r25b ndk/25b
@@ -86,3 +85,8 @@ jobs:
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
+      with:
+        name: Build-Output
+        path: |
+          bin/*.apk
+          build.log
