@@ -4,7 +4,7 @@ package.name = myapp
 package.domain = org.example
 source.dir = .
 version = 1.0
-requirements = python3==3.10.13, kivy==2.3.0
+requirements = python3==3.10.17, kivy==2.3.0
 android.accept_sdk_license = True
 android.ndk = 25c
 android.api = 34
