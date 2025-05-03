@@ -34,24 +34,21 @@ jobs:
             curl \
             cython3
 
-    - name: Install Buildozer with dependencies
+    - name: Install Buildozer
       run: |
-        pip install --user --upgrade pip wheel
         pip install --user buildozer==1.5.0
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-    - name: Initialize Buildozer
+    - name: Prepare build environment
       run: |
-        mkdir -p ~/.buildozer
-        echo "[buildozer]" > ~/.buildozer/default.cfg
-        echo "log_level = 2" >> ~/.buildozer/default.cfg
+        mkdir -p logs
+        buildozer android clean
         buildozer init
 
-    - name: Build with debug logs
+    - name: Build APK with full logs
       run: |
-        buildozer android clean
-        buildozer -v android debug > build.log 2>&1 || (cat build.log && exit 1)
-        cat build.log
+        buildozer -v android debug 2>&1 | tee logs/build.log || exit 1
+        ls -la logs/  # للتأكد من وجود الملف
 
     - name: Upload APK
       if: success()
@@ -61,8 +58,7 @@ jobs:
         path: bin/*.apk
 
     - name: Upload logs
-      if: failure()
       uses: actions/upload-artifact@v4
       with:
         name: Build-Logs
-        path: build.log
+        path: logs/build.log
