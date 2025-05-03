@@ -35,36 +35,41 @@ jobs:
             cython3 \
             wget
 
-    - name: Install Android tools (Local Directory)
+    - name: Install Android tools
       run: |
-        # استخدام مجلد محلي بدلاً من /usr/lib/
+        # إنشاء مجلد SDK مع صلاحيات المستخدم
         mkdir -p $HOME/android-sdk
+        cd $HOME/android-sdk
+        
+        # تنزيل وتثبيت أدوات سطر الأوامر
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmd-tools.zip
-        unzip cmd-tools.zip -d $HOME/android-sdk
-        yes | $HOME/android-sdk/cmdline-tools/bin/sdkmanager --sdk_root=$HOME/android-sdk "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;25b"
+        unzip cmd-tools.zip -d cmdline-tools
+        mv cmdline-tools/cmdline-tools cmdline-tools/latest
+        
+        # إعداد متغيرات البيئة
         echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
+        
+        # قبول التراخيص وتثبيت المكونات
+        yes | sdkmanager --licenses
+        sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+        
+        # تنزيل NDK 25b مباشرةً
+        wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
+        unzip android-ndk-r25b-linux.zip
+        mv android-ndk-r25b ndk/25b
 
     - name: Install Buildozer
       run: |
         pip install --user buildozer==1.5.0
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-    - name: Setup Python-for-Android
+    - name: Configure Buildozer
       run: |
-        mkdir -p .buildozer/android/platform
-        git clone --depth 1 --branch 2023.08.25 \
-          https://ghproxy.com/https://github.com/kivy/python-for-android \
-          .buildozer/android/platform/python-for-android
-        
-        cd .buildozer/android/platform/python-for-android
-        python3 setup.py install --user
-        
-        mkdir -p ~/.p4a
-        echo "[DEFAULT]" > ~/.p4a/config
-        echo "ndk_path = $HOME/android-sdk/ndk/25b" >> ~/.p4a/config
-        echo "sdk_path = $HOME/android-sdk" >> ~/.p4a/config
-        echo "android_api = 34" >> ~/.p4a/config
-        echo "arch = arm64-v8a" >> ~/.p4a/config
+        mkdir -p ~/.buildozer
+        echo "[buildozer]" > ~/.buildozer/default.cfg
+        echo "android.ndk_path = $HOME/android-sdk/ndk/25b" >> ~/.buildozer/default.cfg
+        echo "android.sdk_path = $HOME/android-sdk" >> ~/.buildozer/default.cfg
 
     - name: Build APK
       run: |
@@ -81,8 +86,3 @@ jobs:
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
-      with:
-        name: Build-Output
-        path: |
-          bin/*.apk
-          build.log
