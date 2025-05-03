@@ -60,15 +60,21 @@ jobs:
         pip install --user buildozer==1.5.0
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+    - name: Clone python-for-android
+      run: |
+        mkdir -p .buildozer/android/platform
+        git clone --depth 1 --branch 2023.08.25 \
+          https://ghproxy.com/https://github.com/kivy/python-for-android \
+          .buildozer/android/platform/python-for-android
+
     - name: Configure Build Environment
       run: |
-        # تجاوز تهيئة buildozer إذا الملف موجود
         if [ ! -f buildozer.spec ]; then
             buildozer init
         fi
         
-        # تحديث الإعدادات فقط
         echo -e "\n[buildozer]" >> buildozer.spec
+        echo "p4a.branch = 2023.08.25" >> buildozer.spec
         echo "android.ndk_path = $HOME/android-sdk/ndk/25b" >> buildozer.spec
         echo "android.sdk_path = $HOME/android-sdk" >> buildozer.spec
 
@@ -88,7 +94,4 @@ jobs:
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: Build-Output
-        path: |
-          bin/*.apk
-          build.log
+        name: Build
