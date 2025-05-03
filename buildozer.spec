@@ -1,14 +1,18 @@
 [app]
 title = MyApp
-package.name = myapp
+package.name = com.example.myapp
 package.domain = org.example
 source.dir = .
 version = 1.0
-requirements = python3==3.10.17, kivy==2.3.0
+requirements = 
+    python3,
+    kivy==2.2.1,
+    cython==3.0.0,
+    openssl
+
 android.accept_sdk_license = True
-android.ndk = 25c
-android.api = 34
-androiddminapi = 21
+android.ndk_version = 25b
+android.sdk_version = 34
 android.archs = arm64-v8a
 
 [buildozer]
