@@ -39,16 +39,16 @@ jobs:
       run: |
         mkdir -p $HOME/android-sdk
         cd $HOME/android-sdk
-        
+
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmd-tools.zip
         unzip cmd-tools.zip -d cmdline-tools
         mv cmdline-tools/cmdline-tools cmdline-tools/latest
-        
+
         echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
         echo "PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
-        
+
         yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-        
+
         wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
         unzip android-ndk-r25b-linux.zip -d ndk-temp
         mkdir -p $HOME/android-sdk/ndk/25b
@@ -63,7 +63,7 @@ jobs:
     - name: Clone python-for-android
       run: |
         mkdir -p .buildozer/android/platform
-        git clone --depth 1 --branch 2023.08.25 \
+        git clone --depth 1 --branch develop \
           https://github.com/kivy/python-for-android \
           .buildozer/android/platform/python-for-android
 
@@ -72,9 +72,9 @@ jobs:
         if [ ! -f buildozer.spec ]; then
             buildozer init
         fi
-        
+
         echo -e "\n[buildozer]" >> buildozer.spec
-        echo "p4a.branch = 2023.08.25" >> buildozer.spec
+        echo "p4a.branch = develop" >> buildozer.spec
         echo "android.ndk_path = $HOME/android-sdk/ndk/25b" >> buildozer.spec
         echo "android.sdk_path = $HOME/android-sdk" >> buildozer.spec
 
