@@ -8,6 +8,7 @@ requirements = python3==3.10.17, kivy==2.3.0
 android.accept_sdk_license = True
 android.ndk = 25c
 android.api = 34
+androiddminapi = 21
 android.archs = arm64-v8a
 
 [buildozer]
