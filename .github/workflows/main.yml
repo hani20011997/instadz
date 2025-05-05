@@ -3,13 +3,11 @@ name: Build Kivy APK
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 40  # لأن بناء Kivy قد يستغرق وقتًا طويلاً
+    timeout-minutes: 40
 
     steps:
       - name: Checkout code
@@ -20,30 +18,19 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install system dependencies
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            git zip unzip openjdk-17-jdk \
-            autoconf libtool pkg-config \
-            zlib1g-dev libncurses5-dev \
-            libncursesw5-dev libtinfo5 \
-            cmake libffi-dev libssl-dev
-
-      - name: Install Buildozer and Cython
-        run: |
-          pip install --upgrade pip wheel
+          sudo apt-get install -y git zip unzip openjdk-17-jdk
           pip install buildozer cython==0.29.33
 
-      - name: Build APK with Buildozer
+      - name: Build APK
         run: |
           buildozer android clean
           buildozer -v android debug
-          ls -la bin/  # عرض الملفات المُنشأة
 
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v3
+      - name: Upload APK
+        uses: actions/upload-artifact@v4  # الحل هنا
         with:
           name: InstaDZ-APK
           path: bin/*.apk
-          retention-days: 1
