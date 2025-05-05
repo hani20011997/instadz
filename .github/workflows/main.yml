@@ -1,33 +1,49 @@
 name: Build Kivy APK
 
-on: [push]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 40  # لأن بناء Kivy قد يستغرق وقتًا طويلاً
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python 3.9
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      - name: Install Buildozer and dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
-          pip install buildozer cython==0.29.33 virtualenv
+          sudo apt-get install -y \
+            git zip unzip openjdk-17-jdk \
+            autoconf libtool pkg-config \
+            zlib1g-dev libncurses5-dev \
+            libncursesw5-dev libtinfo5 \
+            cmake libffi-dev libssl-dev
+
+      - name: Install Buildozer and Cython
+        run: |
+          pip install --upgrade pip wheel
+          pip install buildozer cython==0.29.33
 
       - name: Build APK with Buildozer
         run: |
+          buildozer android clean
           buildozer -v android debug
-          ls bin/  # تأكد من وجود APK
+          ls -la bin/  # عرض الملفات المُنشأة
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v3
         with:
-          name: mykivyapp-debug.apk
-          path: bin/*.apk  # سيحمل كل APKs في مجلد bin/
+          name: InstaDZ-APK
+          path: bin/*.apk
+          retention-days: 1
