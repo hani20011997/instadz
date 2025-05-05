@@ -9,7 +9,6 @@ requirements = python3,kivy==2.3.0
 orientation = portrait
 osx.kivy_version = 2.3.0
 
-[buildozer]
 log_level = 2
 warn_on_root = 1
 android.sdk_path = $HOME/android-sdk
