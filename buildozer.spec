@@ -5,17 +5,25 @@ package.domain = org.example
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 1.0
-requirements = python3, kivy==2.3.0
+requirements = python3, kivy==2.3.0, openssl
 orientation = portrait
 
-# إعدادات Android
-android.api = 30  # Android 11 (أكثر استقرارًا)
+android.api = 30
 android.minapi = 21
-android.sdk =  # اتركه فارغًا ليتحمله Buildozer تلقائيًا
-android.ndk = 25b  # أو 23b للإصدارات الأقدم
-android.build_tools_version = 30.0.3  # متوافق مع api 30
-android.arch = arm64-v8a  # للأجهزة الحديثة
+android.ndk = 23b
+android.archs = arm64-v8a
+android.build_tools = 30.0.3
+android.sdk =
 
-# إعدادات التصحيح
+# android.release_keystore = /path/to/keystore
+# android.release_storepassword = PASSWORD
+# android.release_keypassword = PASSWORD
+# android.release_keyalias = ALIAS
+
+log_level = 2
+warn_on_root = 1
+android.accept_sdk_license = True
+
+[buildozer]
 log_level = 2
 warn_on_root = 1
