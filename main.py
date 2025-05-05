@@ -10,13 +10,14 @@ import threading
 import time
 import os
 import smtplib
+import json
 from email.mime.text import MIMEText
 import random
 
 class InstagramVotingApp(App):
     def build(self):
         self.accounts = []
-                        self.activation_checked = False
+        self.activation_checked = False
         self.speed_delay = 2
         self.post_id = ""
         self.current_code = ""
@@ -66,7 +67,7 @@ class InstagramVotingApp(App):
         self.speed_input = TextInput(hint_text="مثال: 2", multiline=False)
         self.layout.add_widget(self.speed_input)
 
-        self.account_input = TextInput(hint_text="أدخل الحسابات بصيغة user:pass", multiline=True)
+        self.account_input = TextInput(hint_text="أدخل الحسابات بصيغة user:pass أو user:pass:proxy", multiline=True)
         self.layout.add_widget(self.account_input)
 
         self.load_button = Button(text="تحميل الحسابات", on_press=self.load_accounts)
@@ -87,7 +88,15 @@ class InstagramVotingApp(App):
     def load_accounts(self, instance):
         text = self.account_input.text.strip()
         lines = text.split("\n")
-        new_accounts = [line.strip().split(":") for line in lines if ":" in line]
+        new_accounts = []
+
+        for line in lines:
+            parts = line.strip().split(":")
+            if len(parts) >= 2:
+                username = parts[0]
+                password = parts[1]
+                proxy = ":".join(parts[2:]) if len(parts) > 2 else None
+                new_accounts.append((username, password, proxy))
 
         if len(new_accounts) + self.used_accounts_count > self.max_accounts:
             self.show_limit_popup()
@@ -97,19 +106,45 @@ class InstagramVotingApp(App):
         self.used_accounts_count += len(new_accounts)
 
         with open("accounts_backup.txt", "a") as f:
-            f.write("\n".join([":".join(acc) for acc in new_accounts]) + "\n")
+            for acc in new_accounts:
+                f.write(":".join([a for a in acc if a]) + "\n")
 
         self.status_label.text = f"تم تحميل {len(new_accounts)} حساب. الإجمالي: {self.used_accounts_count}"
 
-    def vote_with_account(self, username, password, competitor=1):
+    def vote_with_account(self, username, password, proxy=None, competitor=1):
+        session_file = f"sessions/{username}.json"
+        cl = Client()
+
         try:
-            cl = Client()
-                                    cl.login(username, password)
-            post_id = self.post_input.text.strip()
+            if proxy:
+                cl.set_proxy(proxy)
+
+            if os.path.exists(session_file):
+                with open(session_file, "r") as f:
+                    settings = json.load(f)
+                cl.set_settings(settings)
+
+            cl.login(username, password)
+
+            # حفظ الجلسة
+            os.makedirs("sessions", exist_ok=True)
+            with open(session_file, "w") as f:
+                json.dump(cl.get_settings(), f)
+
             time.sleep(random.randint(2, 5))
-            cl.post_like(post_id) if competitor == 1 else cl.post_unlike(post_id)
+
+            if competitor == 1:
+                cl.post_like(self.post_id)
+                self.log_status(username, "تم التصويت بنجاح.")
+            else:
+                cl.post_unlike(self.post_id)
+                self.log_status(username, "تم إلغاء التصويت بنجاح.")
         except Exception as e:
-            print(f"فشل التصويت بواسطة {username}: {e}")
+            self.log_status(username, f"فشل: {str(e)}")
+
+    def log_status(self, username, message):
+        with open("log.txt", "a", encoding="utf-8") as f:
+            f.write(f"[{username}] {message}\n")
 
     def start_voting(self, instance):
         self.speed_delay = int(self.speed_input.text.strip())
@@ -117,8 +152,8 @@ class InstagramVotingApp(App):
         self.post_id = self.post_input.text.strip()
         self.status_label.text = "جارٍ التصويت..."
 
-        for username, password in self.accounts:
-            threading.Thread(target=self.vote_with_account, args=(username, password, competitor)).start()
+        for username, password, proxy in self.accounts:
+            threading.Thread(target=self.vote_with_account, args=(username, password, proxy, competitor)).start()
             time.sleep(self.speed_delay)
 
     def send_recovery_email(self, code):
