@@ -73,10 +73,15 @@ jobs:
             buildozer init
         fi
 
-        echo -e "\n[buildozer]" >> buildozer.spec
+        # Ensure p4a.branch and paths are in the [app] section
+        sed -i '/buildozer/d' buildozer.spec
+        sed -i '/p4a.branch/d' buildozer.spec
+        sed -i '/android.ndk_path/d' buildozer.spec
+        sed -i '/android.sdk_path/d' buildozer.spec
+
         echo "p4a.branch = develop" >> buildozer.spec
-        echo "android.ndk_path = $HOME/android-sdk/ndk/25b" >> buildozer.spec
-        echo "android.sdk_path = $HOME/android-sdk" >> buildozer.spec
+        echo "android.ndk_path = \$HOME/android-sdk/ndk/25b" >> buildozer.spec
+        echo "android.sdk_path = \$HOME/android-sdk" >> buildozer.spec
 
     - name: Build APK
       run: |
