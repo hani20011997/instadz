@@ -7,30 +7,39 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 50
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git zip unzip openjdk-17-jdk
-          pip install buildozer cython==0.29.33
+          sudo apt-get install -y \
+            git zip unzip openjdk-17-jdk \
+            autoconf libtool pkg-config \
+            zlib1g-dev libncurses5-dev \
+            libncursesw5-dev libtinfo5 \
+            cmake libffi-dev libssl-dev
+
+      - name: Install Buildozer
+        run: pip install buildozer cython==0.29.33
+
+      - name: Initialize Buildozer
+        run: |
+          buildozer init
+          buildozer android update
 
       - name: Build APK
         run: |
           buildozer android clean
           buildozer -v android debug
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4  # الحل هنا
+      - uses: actions/upload-artifact@v4
         with:
           name: InstaDZ-APK
           path: bin/*.apk
