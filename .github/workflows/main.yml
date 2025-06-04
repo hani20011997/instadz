@@ -1,4 +1,4 @@
-name: Build EvilApp APK
+name: Build Kivy APK
 
 on:
   push:
@@ -10,51 +10,76 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     env:
+      # تعيين مسارات الأدوات المهمة
       ANDROID_HOME: ${{ github.workspace }}/android-sdk
-      NDK_VERSION: 23.1.7779620  # Added for easier management
+      NDK_VERSION: "23.1.7779620"  # إصدار NDK المثبت
 
     steps:
-    - name: Checkout code
+    # الخطوة 1: تنزيل الكود المصدري
+    - name: تحميل الكود
       uses: actions/checkout@v3
 
-    - name: Set up Python
+    # الخطوة 2: تثبيت بايثون
+    - name: إعداد بايثون
       uses: actions/setup-python@v4
       with:
         python-version: '3.8'
 
-    - name: Add Android SDK to PATH
+    # الخطوة 3: إضافة مسارات Android إلى PATH
+    - name: تهيئة مسارات Android
       run: |
         echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
         echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
 
-    - name: Install dependencies
+    # الخطوة 4: تثبيت التبعيات الأساسية
+    - name: تثبيت المتطلبات
       run: |
         sudo apt update
-        sudo apt install -y openjdk-8-jdk python3-dev python3-pip git unzip ccache libncurses5 libstdc++6 zlib1g zlib1g-dev libffi-dev
+        sudo apt install -y \
+          openjdk-8-jdk \
+          python3-dev \
+          git unzip \
+          zlib1g-dev \
+          libffi-dev
         pip install --upgrade pip
-        pip install buildozer kivy==2.1.0 cython==0.29.24 pyjnius
+        pip install buildozer kivy==2.1.0
 
-    - name: Install Android SDK
+    # الخطوة 5: تثبيت Android SDK
+    - name: تثبيت Android SDK
       run: |
         mkdir -p $ANDROID_HOME/cmdline-tools
         wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O cmdline-tools.zip
         unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
         mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-        yes | sdkmanager --sdk_root=$ANDROID_HOME "platforms;android-33" "build-tools;33.0.2"
+        
+        # قبول التراخيص وتثبيت الحزم
+        yes | sdkmanager --sdk_root=$ANDROID_HOME \
+          "platforms;android-33" \
+          "build-tools;33.0.2" \
+          "platform-tools"
 
-    - name: Manually install Android NDK
+    # الخطوة 6: تثبيت NDK يدوياً (حل المشكلة الأساسية)
+    - name: تثبيت Android NDK
       run: |
         mkdir -p $ANDROID_HOME/ndk
         wget https://dl.google.com/android/repository/android-ndk-r${NDK_VERSION}-linux.zip
         unzip android-ndk-r${NDK_VERSION}-linux.zip -d $ANDROID_HOME/ndk
         mv $ANDROID_HOME/ndk/android-ndk-r${NDK_VERSION} $ANDROID_HOME/ndk/$NDK_VERSION
 
-    - name: Update buildozer.spec with NDK path
+    # الخطوة 7: تحديث ملف buildozer.spec
+    - name: تحديث إعدادات Buildozer
       run: |
-        echo "android.ndk_path = $ANDROID_HOME/ndk/$NDK_VERSION" >> buildozer.spec
-        # Keep existing settings while adding NDK path
+        # حذف أي إعدادات قديمة لـ NDK
         sed -i '/^android.ndk_path/d' buildozer.spec
+        
+        # إضافة المسار الجديد
         echo "android.ndk_path = $ANDROID_HOME/ndk/$NDK_VERSION" >> buildozer.spec
+        
+        # إعدادات إضافية (اختيارية)
+        echo "android.sdk_path = $ANDROID_HOME" >> buildozer.spec
+        echo "android.ndk_version = $NDK_VERSION" >> buildozer.spec
 
-    - name: Build APK
-      run: buildozer android debug
+    # الخطوة 8: بناء التطبيق
+    - name: بناء APK
+      run: |
+        buildozer android debug
