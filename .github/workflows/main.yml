@@ -33,7 +33,7 @@ jobs:
         pip install --upgrade pip
         pip install buildozer kivy==2.1.0 cython==0.29.24 pyjnius
 
-    - name: Install Android SDK
+    - name: Install Android SDK and NDK
       run: |
         mkdir -p $ANDROID_HOME/cmdline-tools
         wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O cmdline-tools.zip
@@ -41,11 +41,10 @@ jobs:
         mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
         yes | sdkmanager --sdk_root=$ANDROID_HOME "platforms;android-33" "build-tools;33.0.2" "ndk;23.1.7779620"
 
+    - name: Update buildozer.spec with NDK path
+      run: |
+        sed -i "/^# *android.ndk_path/d" buildozer.spec
+        echo "android.ndk_path = $ANDROID_HOME/ndk/23.1.7779620" >> buildozer.spec
+
     - name: Build APK
       run: buildozer android debug
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: evilapp-apk
-        path: bin/*.apk
