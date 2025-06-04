@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       ANDROID_HOME: ${{ github.workspace }}/android-sdk
+      NDK_VERSION: 23.1.7779620  # Added for easier management
 
     steps:
     - name: Checkout code
@@ -21,7 +22,7 @@ jobs:
       with:
         python-version: '3.8'
 
-    - name: إضافة Android SDK للمسار
+    - name: Add Android SDK to PATH
       run: |
         echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
         echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
@@ -33,18 +34,27 @@ jobs:
         pip install --upgrade pip
         pip install buildozer kivy==2.1.0 cython==0.29.24 pyjnius
 
-    - name: Install Android SDK and NDK
+    - name: Install Android SDK
       run: |
         mkdir -p $ANDROID_HOME/cmdline-tools
         wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O cmdline-tools.zip
         unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
         mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-        yes | sdkmanager --sdk_root=$ANDROID_HOME "platforms;android-33" "build-tools;33.0.2" "ndk;23.1.7779620"
+        yes | sdkmanager --sdk_root=$ANDROID_HOME "platforms;android-33" "build-tools;33.0.2"
+
+    - name: Manually install Android NDK
+      run: |
+        mkdir -p $ANDROID_HOME/ndk
+        wget https://dl.google.com/android/repository/android-ndk-r${NDK_VERSION}-linux.zip
+        unzip android-ndk-r${NDK_VERSION}-linux.zip -d $ANDROID_HOME/ndk
+        mv $ANDROID_HOME/ndk/android-ndk-r${NDK_VERSION} $ANDROID_HOME/ndk/$NDK_VERSION
 
     - name: Update buildozer.spec with NDK path
       run: |
-        sed -i "/^# *android.ndk_path/d" buildozer.spec
-        echo "android.ndk_path = $ANDROID_HOME/ndk/23.1.7779620" >> buildozer.spec
+        echo "android.ndk_path = $ANDROID_HOME/ndk/$NDK_VERSION" >> buildozer.spec
+        # Keep existing settings while adding NDK path
+        sed -i '/^android.ndk_path/d' buildozer.spec
+        echo "android.ndk_path = $ANDROID_HOME/ndk/$NDK_VERSION" >> buildozer.spec
 
     - name: Build APK
       run: buildozer android debug
