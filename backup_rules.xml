@@ -1,0 +1,4 @@
+<full-backup-content>
+    <exclude domain="file" path="sessions/"/>
+    <exclude domain="database" path="accounts.db"/>
+</full-backup-content>
