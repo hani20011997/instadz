@@ -1,7 +1,9 @@
-name: Build APK with Buildozer
+name: Build InstaDZ APK
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
 
 jobs:
@@ -23,15 +25,17 @@ jobs:
         sudo apt-get update -y
         sudo apt-get install -y \
           build-essential \
+          git \
           openjdk-11-jdk \
           python3-pip \
           zlib1g-dev \
           libffi-dev \
           libssl-dev
 
-    - name: Install Buildozer
+    - name: Install Python dependencies
       run: |
-        pip install --user buildozer
+        python -m pip install --upgrade pip
+        pip install cython==0.29.36 buildozer
 
     - name: Build APK
       run: |
@@ -39,12 +43,14 @@ jobs:
         buildozer -v android debug
         
         if ! ls bin/*.apk 1> /dev/null 2>&1; then
-          echo "Error: APK not found!"
+          echo "Error: APK not generated!"
+          cat .buildozer/android/platform/build/build.log
           exit 1
         fi
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: evilapp-apk
+        name: instadz-apk
         path: bin/*.apk
+        retention-days: 5
