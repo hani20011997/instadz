@@ -52,6 +52,7 @@ jobs:
           libglfw3-dev
 
         pip install --upgrade pip
+        pip install cython
         pip install buildozer
 
     - name: Build APK
