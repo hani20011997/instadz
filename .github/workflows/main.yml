@@ -1,85 +1,65 @@
-name: Build Kivy APK
+name: Buildozer Android Build
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
-    env:
-      # تعيين مسارات الأدوات المهمة
-      ANDROID_HOME: ${{ github.workspace }}/android-sdk
-      NDK_VERSION: "23.1.7779620"  # إصدار NDK المثبت
+    runs-on: ubuntu-latest
 
     steps:
-    # الخطوة 1: تنزيل الكود المصدري
-    - name: تحميل الكود
+    - name: Checkout repository
       uses: actions/checkout@v3
 
-    # الخطوة 2: تثبيت بايثون
-    - name: إعداد بايثون
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.8'
+        python-version: '3.10'
 
-    # الخطوة 3: إضافة مسارات Android إلى PATH
-    - name: تهيئة مسارات Android
+    - name: Install dependencies
       run: |
-        echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
-        echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
-
-    # الخطوة 4: تثبيت التبعيات الأساسية
-    - name: تثبيت المتطلبات
-      run: |
-        sudo apt update
-        sudo apt install -y \
-          openjdk-8-jdk \
-          python3-dev \
-          git unzip \
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          ccache \
+          git \
+          libncurses5 \
+          libffi-dev \
+          libssl-dev \
+          python3-pip \
+          python3-setuptools \
+          openjdk-11-jdk \
+          unzip \
+          zip \
           zlib1g-dev \
-          libffi-dev
+          liblzma-dev \
+          libbz2-dev \
+          libsqlite3-dev \
+          libreadline-dev \
+          libffi-dev \
+          libssl-dev \
+          libjpeg-dev \
+          libfreetype6-dev \
+          libgl1-mesa-dev \
+          libgles2-mesa-dev \
+          libglu1-mesa-dev \
+          libglfw3 \
+          libglfw3-dev
+
         pip install --upgrade pip
-        pip install buildozer kivy==2.1.0
+        pip install buildozer
 
-    # الخطوة 5: تثبيت Android SDK
-    - name: تثبيت Android SDK
-      run: |
-        mkdir -p $ANDROID_HOME/cmdline-tools
-        wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O cmdline-tools.zip
-        unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
-        mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-        
-        # قبول التراخيص وتثبيت الحزم
-        yes | sdkmanager --sdk_root=$ANDROID_HOME \
-          "platforms;android-33" \
-          "build-tools;33.0.2" \
-          "platform-tools"
-
-    # الخطوة 6: تثبيت NDK يدوياً (حل المشكلة الأساسية)
-    - name: تثبيت Android NDK
-      run: |
-        mkdir -p $ANDROID_HOME/ndk
-        wget https://dl.google.com/android/repository/android-ndk-r${NDK_VERSION}-linux.zip
-        unzip android-ndk-r${NDK_VERSION}-linux.zip -d $ANDROID_HOME/ndk
-        mv $ANDROID_HOME/ndk/android-ndk-r${NDK_VERSION} $ANDROID_HOME/ndk/$NDK_VERSION
-
-    # الخطوة 7: تحديث ملف buildozer.spec
-    - name: تحديث إعدادات Buildozer
-      run: |
-        # حذف أي إعدادات قديمة لـ NDK
-        sed -i '/^android.ndk_path/d' buildozer.spec
-        
-        # إضافة المسار الجديد
-        echo "android.ndk_path = $ANDROID_HOME/ndk/$NDK_VERSION" >> buildozer.spec
-        
-        # إعدادات إضافية (اختيارية)
-        echo "android.sdk_path = $ANDROID_HOME" >> buildozer.spec
-        echo "android.ndk_version = $NDK_VERSION" >> buildozer.spec
-
-    # الخطوة 8: بناء التطبيق
-    - name: بناء APK
+    - name: Build APK
       run: |
         buildozer android debug
+
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: apk
+        path: bin/*.apk
