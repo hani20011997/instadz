@@ -25,8 +25,8 @@ android.ndk = 25b
 android.api = 33
 android.minapi = 21
 android.build_tools_version = 34.0.0
-android.sdk_dir = %(android_sdk_dir)s
-android.ndk_path = %(android_ndk_dir)s
+android.sdk_dir = /home/runner/.buildozer/android/platform/android-sdk
+android.ndk_path = /home/runner/.buildozer/android/platform/android-ndk-r25b
 android.gradle_dependencies = 'com.android.support:multidex:1.0.3'
 
 android.permissions = INTERNET, ACCESS_NETWORK_STATE
