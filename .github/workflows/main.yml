@@ -41,8 +41,6 @@ jobs:
           libbz2-dev \
           libsqlite3-dev \
           libreadline-dev \
-          libffi-dev \
-          libssl-dev \
           libjpeg-dev \
           libfreetype6-dev \
           libgl1-mesa-dev \
@@ -52,8 +50,12 @@ jobs:
           libglfw3-dev
 
         pip install --upgrade pip
-        pip install cython
-        pip install buildozer
+        pip install --upgrade cython
+        pip install --upgrade buildozer
+        pip install --upgrade git+https://github.com/kivy/python-for-android.git
+
+    - name: Clean previous SDK/NDK (optional)
+      run: rm -rf ~/.buildozer/android/platform/android-sdk ~/.buildozer/android/platform/android-ndk
 
     - name: Build APK
       run: |
