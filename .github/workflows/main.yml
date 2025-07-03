@@ -24,38 +24,47 @@ jobs:
         sudo apt-get install -y \
           build-essential \
           git \
-          openjdk-17-jdk \  # تم الترقية إلى JDK 17
+          openjdk-11-jdk \
           python3-pip \
           zlib1g-dev \
           libffi-dev \
-          libssl-dev \
-          android-sdk \  # إضافة حزمة Android SDK الأساسية
-          android-sdk-build-tools-34 \  # إصدار مستقر
-          android-sdk-platform-tools
+          libssl-dev
 
     - name: Setup Android SDK
       run: |
-        mkdir -p ~/.android
-        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > ~/.android/licenses/android-sdk-license
-        echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> ~/.android/licenses/android-sdk-license
+        mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
+        cd ~/.buildozer/android/platform
         
-        # تثبيت إصدار محدد من Build-Tools يتضمن AIDL
-        sdkmanager "build-tools;34.0.0" "platform-tools" "platforms;android-34"
+        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+        unzip -q cmdline-tools.zip -d cmdline-tools-tmp
+        mv cmdline-tools-tmp/cmdline-tools android-sdk/cmdline-tools/latest
+        rm -rf cmdline-tools-tmp cmdline-tools.zip
+        
+        # قبول التراخيص
+        yes | android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+        
+        # تثبيت الأدوات الأساسية
+        android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;34.0.0" "cmdline-tools;latest"
 
-        # إنشاء روابط رمزية للأدوات المطلوبة
-        ln -s ~/Android/Sdk/build-tools/34.0.0/aidl /usr/local/bin/aidl
-        ln -s ~/Android/Sdk/build-tools/34.0.0/* /usr/local/bin/
+    - name: Configure environment
+      run: |
+        echo "ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk" >> $GITHUB_ENV
+        echo "ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk" >> $GITHUB_ENV
+        echo "PATH=$PATH:$HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin:$HOME/.buildozer/android/platform/android-sdk/build-tools/34.0.0" >> $GITHUB_ENV
 
-    - name: Install Python dependencies
+    - name: Verify AIDL installation
+      run: |
+        ls $ANDROID_HOME/build-tools/34.0.0/aidl || echo "AIDL not found!"
+        $ANDROID_HOME/build-tools/34.0.0/aidl --version
+
+    - name: Install Buildozer and dependencies
       run: |
         python -m pip install --upgrade pip
         pip install cython==0.29.36 buildozer
 
     - name: Build APK
       run: |
-        export PATH=$PATH:~/Android/Sdk/build-tools/34.0.0:~/.local/bin
-        export ANDROID_SDK_ROOT=~/Android/Sdk
-        
+        export PATH=$PATH:~/.local/bin:$ANDROID_HOME/build-tools/34.0.0
         buildozer -v android debug
         
         if ! ls bin/*.apk 1> /dev/null 2>&1; then
