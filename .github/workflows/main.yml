@@ -35,40 +35,27 @@ jobs:
         mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
         cd ~/.buildozer/android/platform
         
-        # Install Command Line Tools
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
         unzip -q cmdline-tools.zip -d cmdline-tools-tmp
         mv cmdline-tools-tmp/cmdline-tools android-sdk/cmdline-tools/latest
         rm -rf cmdline-tools-tmp cmdline-tools.zip
         
-        # Accept licenses
         yes | android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-        
-        # Install required components
-        android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;34.0.0"
+        android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.0"
 
     - name: Setup Android NDK
       run: |
         mkdir -p ~/.buildozer/android/platform
         cd ~/.buildozer/android/platform
         
-        # Download NDK r25b
         wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip -O ndk.zip
         unzip -q ndk.zip
         rm ndk.zip
-        
-        # Verify NDK installation
-        if [ ! -d "android-ndk-r25b" ]; then
-          echo "Error: NDK installation failed!"
-          exit 1
-        fi
 
-    - name: Verify Android Tools
+    - name: Fix AIDL Permissions
       run: |
-        echo "Checking Android tools..."
-        ls ~/.buildozer/android/platform/android-sdk
-        ls ~/.buildozer/android/platform/android-ndk-r25b
-        ~/.buildozer/android/platform/android-sdk/build-tools/34.0.0/aidl --version
+        chmod +x ~/.buildozer/android/platform/android-sdk/build-tools/33.0.0/aidl
+        ls -la ~/.buildozer/android/platform/android-sdk/build-tools/33.0.0/aidl
 
     - name: Install Buildozer and dependencies
       run: |
@@ -77,7 +64,7 @@ jobs:
 
     - name: Build APK
       run: |
-        export PATH=$PATH:~/.local/bin:~/.buildozer/android/platform/android-sdk/build-tools/34.0.0
+        export PATH=$PATH:~/.local/bin:~/.buildozer/android/platform/android-sdk/build-tools/33.0.0
         buildozer -v android debug
         
         if ! ls bin/*.apk 1> /dev/null 2>&1; then
