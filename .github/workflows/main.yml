@@ -30,7 +30,7 @@ jobs:
           libffi-dev \
           libssl-dev
 
-    - name: Setup Android SDK
+    - name: Setup Android SDK and NDK
       run: |
         mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
         cd ~/.buildozer/android/platform
@@ -40,22 +40,12 @@ jobs:
         mv cmdline-tools-tmp/cmdline-tools android-sdk/cmdline-tools/latest
         rm -rf cmdline-tools-tmp cmdline-tools.zip
         
-        # قبول التراخيص
         yes | android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-        
-        # تثبيت الأدوات الأساسية
-        android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;34.0.0" "cmdline-tools;latest"
+        android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;34.0.0"
 
-    - name: Configure environment
-      run: |
-        echo "ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk" >> $GITHUB_ENV
-        echo "ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk" >> $GITHUB_ENV
-        echo "PATH=$PATH:$HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin:$HOME/.buildozer/android/platform/android-sdk/build-tools/34.0.0" >> $GITHUB_ENV
-
-    - name: Verify AIDL installation
-      run: |
-        ls $ANDROID_HOME/build-tools/34.0.0/aidl || echo "AIDL not found!"
-        $ANDROID_HOME/build-tools/34.0.0/aidl --version
+        wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip -O ndk.zip
+        unzip -q ndk.zip
+        rm ndk.zip
 
     - name: Install Buildozer and dependencies
       run: |
@@ -64,7 +54,7 @@ jobs:
 
     - name: Build APK
       run: |
-        export PATH=$PATH:~/.local/bin:$ANDROID_HOME/build-tools/34.0.0
+        export PATH=$PATH:~/.local/bin:$HOME/.buildozer/android/platform/android-sdk/build-tools/34.0.0
         buildozer -v android debug
         
         if ! ls bin/*.apk 1> /dev/null 2>&1; then
