@@ -28,7 +28,7 @@ jobs:
           build-essential \
           ccache \
           git \
-          libncurses5 \
+          libncurses6 \
           libffi-dev \
           libssl-dev \
           python3-pip \
