@@ -1,13 +1,13 @@
 [app]
-title = EvilApp
-package.name = evilapp
-package.domain = org.evil
+title = InstaDZ
+package.name = instadz
+package.domain = com.dz
 version = 1.0
 
 source.dir = .
 source.main = main.py
 source.include_exts = py,png,jpg,kv,atlas,json,txt,xml
-source.include_patterns = assets/*,*.txt
+source.include_patterns = assets/*,sessions/*,*.txt
 
 requirements = 
     python3,
@@ -16,20 +16,28 @@ requirements =
     pillow==10.0.0,
     pyjnius==1.4.2,
     openssl,
-    urllib3==1.26.18
+    urllib3,
+    certifi,
+    cython==0.29.36
 
-android.arch = arm64-v8a
+android.archs = arm64-v8a
 android.ndk = 25b
-android.sdk = 33
 android.api = 33
 android.minapi = 21
+android.gradle_dependencies = 'com.android.support:multidex:1.0.3'
+
 android.permissions = INTERNET, ACCESS_NETWORK_STATE
 
 orientation = portrait
 fullscreen = 0
 icon = icon.png
 presplash = presplash.png
+android.entrypoint = org.kivy.android.PythonActivity
+android.allow_backup = False
 
 [buildozer]
 log_level = 2
 warn_on_root = 1
+target = android
+p4a.branch = develop
+android.accept_sdk_license = True
