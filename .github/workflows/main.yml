@@ -24,24 +24,33 @@ jobs:
         sudo apt-get install -y \
           build-essential \
           git \
-          openjdk-11-jdk \
+          openjdk-17-jdk \
           python3-pip \
           zlib1g-dev \
           libffi-dev \
-          libssl-dev
+          libssl-dev \
+          unzip
 
     - name: Setup Android SDK
       run: |
-        mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
+        mkdir -p ~/.buildozer/android/platform/android-sdk
         cd ~/.buildozer/android/platform
         
+        # Download and install cmdline-tools
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
         unzip -q cmdline-tools.zip -d cmdline-tools-tmp
         mv cmdline-tools-tmp/cmdline-tools android-sdk/cmdline-tools/latest
         rm -rf cmdline-tools-tmp cmdline-tools.zip
         
-        yes | android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-        android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.0"
+        # Set PATH for sdkmanager
+        echo "$HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+        
+        # Accept licenses and install components
+        yes | sdkmanager --licenses
+        sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.0"
+        
+        # Verify installation
+        ls -la $HOME/.buildozer/android/platform/android-sdk
 
     - name: Setup Android NDK
       run: |
@@ -52,11 +61,6 @@ jobs:
         unzip -q ndk.zip
         rm ndk.zip
 
-    - name: Fix AIDL Permissions
-      run: |
-        chmod +x ~/.buildozer/android/platform/android-sdk/build-tools/33.0.0/aidl
-        ls -la ~/.buildozer/android/platform/android-sdk/build-tools/33.0.0/aidl
-
     - name: Install Buildozer and dependencies
       run: |
         python -m pip install --upgrade pip
@@ -64,7 +68,7 @@ jobs:
 
     - name: Build APK
       run: |
-        export PATH=$PATH:~/.local/bin:~/.buildozer/android/platform/android-sdk/build-tools/33.0.0
+        export PATH=$PATH:$HOME/.local/bin:$HOME/.buildozer/android/platform/android-sdk/platform-tools
         buildozer -v android debug
         
         if ! ls bin/*.apk 1> /dev/null 2>&1; then
