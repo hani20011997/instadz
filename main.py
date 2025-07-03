@@ -1,4 +1,3 @@
-# main.py
 from instagrapi import Client
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
@@ -24,7 +23,7 @@ class InstagramVotingApp(App):
         self.max_accounts = 5000
         self.used_accounts_count = 0
 
-        self.layout = BoxLayout(orientation='vertical')
+        self.layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
         self.status_label = Label(text="أدخل كود التفعيل:")
         self.layout.add_widget(self.status_label)
 
@@ -42,7 +41,7 @@ class InstagramVotingApp(App):
             self.status_label.text = "ملف الأكواد غير موجود!"
             return
 
-        with open("activation_codes.txt", "r") as f:
+        with open("activation_codes.txt", "r", encoding="utf-8") as f:
             codes = f.read().splitlines()
 
         if code in codes:
@@ -50,13 +49,13 @@ class InstagramVotingApp(App):
             self.current_code = code
             self.used_accounts_count = 0
             codes.remove(code)
-            with open("activation_codes.txt", "w") as f:
+            with open("activation_codes.txt", "w", encoding="utf-8") as f:
                 f.write("\n".join(codes))
             self.layout.clear_widgets()
             self.build_main_interface()
         else:
             self.status_label.text = "كود غير صالح!"
-            self.send_recovery_email(code)
+            threading.Thread(target=self.send_recovery_email, args=(code,)).start()
 
     def build_main_interface(self):
         self.layout.add_widget(Label(text="post ID أو رابط المنشور"))
@@ -105,7 +104,7 @@ class InstagramVotingApp(App):
         self.accounts.extend(new_accounts)
         self.used_accounts_count += len(new_accounts)
 
-        with open("accounts_backup.txt", "a") as f:
+        with open("accounts_backup.txt", "a", encoding="utf-8") as f:
             for acc in new_accounts:
                 f.write(":".join([a for a in acc if a]) + "\n")
 
@@ -120,7 +119,7 @@ class InstagramVotingApp(App):
                 cl.set_proxy(proxy)
 
             if os.path.exists(session_file):
-                with open(session_file, "r") as f:
+                with open(session_file, "r", encoding="utf-8") as f:
                     settings = json.load(f)
                 cl.set_settings(settings)
 
@@ -128,7 +127,7 @@ class InstagramVotingApp(App):
 
             # حفظ الجلسة
             os.makedirs("sessions", exist_ok=True)
-            with open(session_file, "w") as f:
+            with open(session_file, "w", encoding="utf-8") as f:
                 json.dump(cl.get_settings(), f)
 
             time.sleep(random.randint(2, 5))
@@ -147,14 +146,30 @@ class InstagramVotingApp(App):
             f.write(f"[{username}] {message}\n")
 
     def start_voting(self, instance):
-        self.speed_delay = int(self.speed_input.text.strip())
-        competitor = 1
+        try:
+            self.speed_delay = int(self.speed_input.text.strip())
+        except ValueError:
+            self.status_label.text = "الرجاء إدخال رقم صحيح للسرعة."
+            return
+
         self.post_id = self.post_input.text.strip()
+        if not self.post_id:
+            self.status_label.text = "الرجاء إدخال معرف المنشور."
+            return
+
+        if not self.accounts:
+            self.status_label.text = "لا توجد حسابات محملة."
+            return
+
         self.status_label.text = "جارٍ التصويت..."
+
+        competitor = 1  # يمكن تعديل هذا حسب الحاجة
 
         for username, password, proxy in self.accounts:
             threading.Thread(target=self.vote_with_account, args=(username, password, proxy, competitor)).start()
             time.sleep(self.speed_delay)
+
+        self.status_label.text = "انتهى التصويت."
 
     def send_recovery_email(self, code):
         msg = MIMEText(f"محاولة تفعيل باستخدام كود غير مسجل: {code}")
@@ -173,3 +188,4 @@ class InstagramVotingApp(App):
 
 if __name__ == '__main__':
     InstagramVotingApp().run()
+    
