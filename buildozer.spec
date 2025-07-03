@@ -14,20 +14,17 @@ requirements =
     kivy==2.1.0,
     requests==2.31.0,
     pillow==10.0.0,
-    pyjnius==1.4.2,
     openssl,
     urllib3,
     certifi,
     cython==0.29.36
 
 android.archs = arm64-v8a
-android.ndk = 25b
+android.ndk_path = /home/runner/.buildozer/android/platform/android-ndk-r25b
+android.sdk_dir = /home/runner/.buildozer/android/platform/android-sdk
 android.api = 33
 android.minapi = 21
 android.build_tools_version = 33.0.0
-android.sdk_dir = /home/runner/.buildozer/android/platform/android-sdk
-android.ndk_path = /home/runner/.buildozer/android/platform/android-ndk-r25b
-android.gradle_dependencies = 'com.android.support:multidex:1.0.3'
 
 android.permissions = INTERNET, ACCESS_NETWORK_STATE
 
