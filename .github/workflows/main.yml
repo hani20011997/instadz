@@ -3,8 +3,6 @@ name: Build InstaDZ APK
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
 
 jobs:
   build:
@@ -26,11 +24,27 @@ jobs:
         sudo apt-get install -y \
           build-essential \
           git \
-          openjdk-11-jdk \
+          openjdk-17-jdk \  # تم الترقية إلى JDK 17
           python3-pip \
           zlib1g-dev \
           libffi-dev \
-          libssl-dev
+          libssl-dev \
+          android-sdk \  # إضافة حزمة Android SDK الأساسية
+          android-sdk-build-tools-34 \  # إصدار مستقر
+          android-sdk-platform-tools
+
+    - name: Setup Android SDK
+      run: |
+        mkdir -p ~/.android
+        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > ~/.android/licenses/android-sdk-license
+        echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> ~/.android/licenses/android-sdk-license
+        
+        # تثبيت إصدار محدد من Build-Tools يتضمن AIDL
+        sdkmanager "build-tools;34.0.0" "platform-tools" "platforms;android-34"
+
+        # إنشاء روابط رمزية للأدوات المطلوبة
+        ln -s ~/Android/Sdk/build-tools/34.0.0/aidl /usr/local/bin/aidl
+        ln -s ~/Android/Sdk/build-tools/34.0.0/* /usr/local/bin/
 
     - name: Install Python dependencies
       run: |
@@ -39,7 +53,9 @@ jobs:
 
     - name: Build APK
       run: |
-        export PATH=$PATH:~/.local/bin
+        export PATH=$PATH:~/Android/Sdk/build-tools/34.0.0:~/.local/bin
+        export ANDROID_SDK_ROOT=~/Android/Sdk
+        
         buildozer -v android debug
         
         if ! ls bin/*.apk 1> /dev/null 2>&1; then
